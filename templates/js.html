@@ -1,0 +1,18 @@
+<script>
+$('.add-to-cart').submit(function(e){
+     e.preventDefalut()
+    var data = $('.add-to-cart').serialize()
+    $.ajax({
+        type:'POST',
+        url:" {% url 'add_cart' %} ",
+        data:data,
+        success:function(suc){
+            console.log(suc)
+        },
+        error:function(response,err){
+            console.log(err)
+        }
+    })
+})
+
+</script>

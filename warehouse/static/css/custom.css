@@ -1,0 +1,9 @@
+
+#img-show {
+    position: relative;
+}
+.image-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+}

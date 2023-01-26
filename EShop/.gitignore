@@ -1,0 +1,7 @@
+# .gitignore
+
+__pycache__/
+db.sqlite3
+*.log
+__pycache__/
+/warehouse/

@@ -1,0 +1,141 @@
+{% extends 'nav.html' %}
+
+{% block jquery %}
+<script>
+$("document").ready(function(){
+    console.log('document ready sure?')
+    $('.cart-visible').css('display','none')
+    var items = []
+    $('.cart').each(function(){
+        items.push($(this).attr('productid'))
+    })
+    
+
+    $.each(items,(index,item)=>{
+        $(`#add-to-cart-btn-${item}`).click(function(e){
+            console.log('add to cart button clicked!')
+            e.preventDefault()
+            let data = $(`#add-to-cart-${item}`).serialize()
+            $.ajax({
+                type:'POST',
+                url:"{% url 'add_cart' %}",
+                data:data,
+                success:function(res){
+                    console.log("Succed !")
+                var cart_items = res['cart_items']
+                console.log(cart_items)
+                var cart = $('#cart-items').text(cart_items)  
+                $(`#add-to-cart-${item}`).css('display','none')
+                $(`#remove-from-cart-${item}`).css('display','block')
+                },
+                error:function(res,err){
+                    console.log(err)
+                    console.log("Failed Add to cart")
+                }
+            })
+        })
+    })
+
+    // remove from cart 
+        $.each(items,(index,item)=>{
+        $(`#remove-from-cart-btn-${item}`).click(function(e){
+            e.preventDefault();
+            let data = $(`#remove-from-cart-${item}`).serialize();
+            console.log('remove from cart button clicked!');
+            $.ajax({
+                type:'POST',
+                url:"{% url 'remove_from_cart' %}",
+                data:data,
+                success:function(res){
+                var cart_items = res['cart_items']
+                var cart = $('#cart-items').text(cart_items)  
+                $(`#add-to-cart-${item}`).css('display','block')
+                $(`#remove-from-cart-${item}`).css('display','none')
+                },
+                error:function(res,err){
+                    console.log(err)
+                }
+            });
+        });
+    });
+});
+
+</script>
+{% endblock jquery %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="jumbotron">
+    
+    </div>
+    <div class="row" style="100%">
+        {% for product in products.object_list %}
+            <div class="col-2 d-flex">
+                <div class="card d-flex" style="width: 100%;justify-content:evenly;align-items:space-between">
+                    <a href="{% url 'product_detail' product.slug %}">
+                    <img src="{{product.image.url}}" width="250px" class="card-img-top" alt="...">
+                    </a>
+                    <div class="card-body">
+                        <h5 class="card-title">{{product.name}}</h5>
+                            {% if product.id not in cart.get_keys %}
+                                    <form class="cart add-to-cart" productid="{{product.id}}" id="add-to-cart-{{product.id}}" style="display: inline-block" method="POST" action="{% url 'add_cart' %}">
+                                    {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        <button id="add-to-cart-btn-{{product.id}}" class="btn btn-primary align-center">
+                                        <i class="fa fa-cart-plus" aria-hidden="true"></i>
+                                        To Cart</button>
+                                    </form>
+
+                                     <form class="cart remove-from-cart cart-visible" id="remove-from-cart-{{product.id}}" productid="{{product.id}}" style="display: inline-block" method="POST" action="{% url 'remove_from_cart' %}">
+                                    {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        <button id="remove-from-cart-btn-{{product.id}}" class="btn btn-warning align-center">
+                                        <i class="fas fa-trash-alt"></i>
+                                        From Cart</button>
+                                    </form>    
+
+                            {% else %}
+                                    <form class="cart add-to-cart cart-visible" productid="{{product.id}}" id="add-to-cart-{{product.id}}" style="display: inline-block" method="POST" action="{% url 'add_cart' %}">
+                                    {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        <button id="add-to-cart-btn-{{product.id}}" class="btn btn-primary align-center">
+                                        <i class="fa fa-cart-plus" aria-hidden="true"></i>
+                                        To Cart</button>
+                                    </form>
+                                    <form class="cart remove-from-cart" id="remove-from-cart-{{product.id}}" productid="{{product.id}}" style="display: inline-block" method="POST" action="{% url 'remove_from_cart' %}">
+                                    {% csrf_token %}
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        <button id="remove-from-cart-btn-{{product.id}}" class="btn btn-warning align-center">
+                                        <i class="fas fa-trash-alt"></i>
+                                        From Cart</button>
+                                    </form>
+                            {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="row">
+  <ul class="pagination">
+      {% if products.has_previous %}
+        <li class="page-item">
+        <a class="page-link" href="{% url 'product_list' %}?page={{ products.previous_page_number }}"><i class="fas fa-backward"></i></a>
+        </li>
+        {% endif %}
+        {% for page in products.paginator.page_range %}
+            <li class="page-item">
+                <a class="page-link" href="{% url 'product_list' %}?page={{ page }}">{{page}}</a>
+            </li>    
+        {% endfor %}
+        {% if products.has_next %}
+            <li class="page-item">
+            <a class="page-link" href="{% url 'product_list' %}?page={{ products.next_page_number }}">
+            <i class="fas fa-forward"></i>
+            </a>
+            </li>
+        {% endif %}
+  </ul>
+    </div>
+
+</div>
+{% endblock body %}

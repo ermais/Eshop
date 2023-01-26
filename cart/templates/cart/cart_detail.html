@@ -1,0 +1,80 @@
+{% extends 'nav.html' %}
+{% load crispy_forms_tags %}
+
+{% block jquery %}
+<script>
+    $('document').ready(function(){
+        product_ids = []
+        $('.cart-update').each(function(e){
+          product_ids.push($(this).attr('productid'))
+        })
+        console.log(product_ids)
+        product_ids.map(id=>{
+          $(`#item-${id}-btn`).click(function(e){
+            e.preventDefault()
+            let data = $(`#item-${id}-form`).serialize()
+            $.ajax({
+              type:'POST',
+              url:"{% url 'cart_detail' %}",
+              data:data,
+              success:function(res){
+                var cart_items = res['cart_items']
+                var cart = $('#cart-items').text(cart_items)  
+              },
+              error:function(res,err){
+                console.log(err)
+              }
+            })
+          })
+        })
+
+      $('.pro-quantity').each(function(e){
+        $(this).blur(function(event){
+          let classes = $(this).attr('class')
+          console.log(form)
+        })
+      })
+    })
+</script>
+
+{% endblock jquery %}
+
+
+{% block body %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">#</th>
+      <th scope="col">Image</th>
+      <th scope="col">Product</th>
+      <th scope="col">Quantity</th>
+      <th scope="col">Pirce</th>
+      <th scope="col">Delete</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for item in cart %}
+    {% with product=item.product %}
+    <tr>
+      <th scope="row">{{forloop.counter}}</th>
+      <td><img src="{{product.image.url}}" height="50px"></td>
+      <td>{{product.name}}</td>
+      <td>
+        <form class="cart-update" productid="{{product.id}}" id="item-{{product.id}}-form" action="{% url 'cart_detail' %}" method="post">
+        {% csrf_token %}
+            {% crispy item.update_cart_form %}
+        </form>
+      </td>
+      <td>{{product.price}}</td>
+      <td><button class="btn btn-warning" id="remove-from-cart-{{product.id}}">Delete</button>
+    </tr>
+    {% endwith %}
+  {% endfor %}
+  <tr>
+    <td colspan="4"></td>
+    <td><a  href="{% url 'order_create' %}" class="btn btn-success">Checkout</a>
+  </tr>
+  </tbody>
+</table>
+
+{% endblock body %}

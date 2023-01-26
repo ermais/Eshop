@@ -1,0 +1,206 @@
+{% extends 'nav.html' %}
+{% block jquery %}
+<script>
+    $('document').ready(function(){
+        $('#img-show').css('position','relative')
+        $('.image-slider').css({'position':'absolute','left':'0','top':'0'})
+        $('.img-to-hidde').css('display','none')
+        $('.btn-slider,.title').css({
+            'height':'100%',
+            'display':'flex',
+            'flex-direction':'column',
+            'justify-content':'space-around',
+            'align-items':'space-around',
+            'align-content':'space-around'
+        })
+        $('.price').css({
+            'display':'flex',
+            'flex-direction':'column',
+            'justify-content':'flex-start',
+            'align-items':'flex-start',
+            'align-content':'flex-start'
+        })
+
+
+        $('#next-img').click(function(e){
+        let image_ids = []
+        $('.image-slider').each(function(e){
+            image_ids.push($(this).attr('imageid'))
+        })
+        let currentImage = $('.image-slider:not(.img-to-hidde)').attr('imageid')
+        let currentImageIndex = image_ids.indexOf(currentImage)
+        currentImage = image_ids[currentImageIndex]
+        let nextImage = currentImage
+        console.log(currentImageIndex,image_ids.length)
+        if(currentImageIndex < (image_ids.length-1)){
+        let nextImageIndex = currentImageIndex + 1
+        nextImage = image_ids[nextImageIndex]
+        }
+            e.preventDefault()
+            $(`#img-${currentImage}`).addClass('img-to-hidde')
+            $(`#img-${nextImage}`).removeClass('img-to-hidde')
+            $('.img-to-hidde').css('display','none')
+            $('.image-slider:not(.img-to-hidde)').css('display','block')
+        })
+
+        $('#prev-img').click(function(e){
+            let image_ids = []
+            $('.image-slider').each(function(e){
+                image_ids.push($(this).attr('imageid'))
+            })
+            let currentImage = $('.image-slider:not(.img-to-hidde)').attr('imageid')
+            let currentImageIndex = image_ids.indexOf(currentImage)
+            currentImage = image_ids[currentImageIndex]
+            let prevImage = currentImage
+            if(currentImageIndex > 0 && currentImageIndex<image_ids.length){
+                let prevImageIndex = currentImageIndex - 1
+                prevImage = image_ids[prevImageIndex]
+            }
+            console.log(currentImageIndex,image_ids.length)
+
+            e.preventDefault()
+            $(`#img-${currentImage}`).addClass('img-to-hidde')
+            $(`#img-${prevImage}`).removeClass('img-to-hidde')
+            $('.img-to-hidde').css('display','none')
+            $('.image-slider:not(.img-to-hidde)').css('display','block')
+        })
+
+
+
+        // cart handler in detail view 
+
+    $('.cart-visible').css('display','none')
+    var items = []
+    $('.cart').each(function(){
+        items.push($(this).attr('productid'))
+    })
+    items.map(item=>{
+        $(`#add-to-cart-btn-${item}`).click(function(e){
+            e.preventDefault()
+            let data = $(`#add-to-cart-${item}`).serialize()
+            $.ajax({
+                type:'POST',
+                url:"{% url 'add_cart' %}",
+                data:data,
+                success:function(res){
+                var cart_items = res['cart_items']
+                var cart = $('#cart-items').text(cart_items)  
+                $(`#add-to-cart-${item}`).css('display','none')
+                $(`#remove-from-cart-${item}`).css('display','block')
+                },
+                error:function(res,err){
+                    console.log(err)
+                }
+            })
+        })
+    })
+
+    // remove from cart 
+        items.map(item=>{
+        $(`#remove-from-cart-btn-${item}`).click(function(e){
+            e.preventDefault()
+            let data = $(`#remove-from-cart-${item}`).serialize()
+            $.ajax({
+                type:'POST',
+                url:"{% url 'remove_from_cart' %}",
+                data:data,
+                success:function(res){
+                var cart_items = res['cart_items']
+                var cart = $('#cart-items').text(cart_items)  
+                $(`#add-to-cart-${item}`).css('display','block')
+                $(`#remove-from-cart-${item}`).css('display','none')
+                },
+                error:function(res,err){
+                    console.log(err)
+                }
+            })
+        })
+    })
+
+    })
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="row container-fluid mt-5" style="height:85vh">
+    <div class="col-6">
+        <div class="row"  style="height:100%">
+            <div class="col-1 d-flex btn-slider">
+                <button class="btn btn-text" id="prev-img">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+            <div class="col-10 d-block" id="img-show" numimages="{{product.images.all|length}}" imgindex="0">
+                {% for image in product.images.all %}
+                    {% if forloop.counter == 1 %}
+                    <img class="image-slider img-fluid" height="100%" id="img-{{image.id}}" imageid="{{image.id}}" src="{{image.image.url}}" alt="...">
+                    {% else %}                    
+                    <img class="image-slider img-fluid img-to-hidde" width="100%" id="img-{{image.id}}" imageid="{{image.id}}" src="{{image.image.url}}" alt="...">
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+            <div class="col-1 btn-slider">
+                <button id="next-img" class="btn btn-text">
+                    <i class="fas fa-angle-right fa-3x"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="col-3 title">
+        <div class="product-title">
+            <h3>{{product.name}}</h3>
+            <p class="text-muted">{{product.updated|date:"D d M Y"}}
+        </div>
+        <div class="price">
+            <h4>Price</h4>
+            <p>${{product.price}}</p>
+        </div>
+        <div class="cart-action">
+            {% if product.id not in cart.get_keys %}
+                <form class="cart add-to-cart" productid="{{product.id}}" id="add-to-cart-{{product.id}}" style="display: inline-block" method="POST" action="{% url 'add_cart' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                     <button id="add-to-cart-btn-{{product.id}}" class="btn btn-primary align-center">
+                        <i class="fa fa-cart-plus" aria-hidden="true"></i>
+                            To Cart</button>
+                </form>
+
+                <form class="cart remove-from-cart cart-visible" id="remove-from-cart-{{product.id}}" productid="{{product.id}}" style="display: inline-block" method="POST" action="{% url 'remove_from_cart' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button id="remove-from-cart-btn-{{product.id}}" class="btn btn-warning align-center">
+                    <i class="fas fa-trash-alt"></i>
+                        From Cart</button>
+                    </form>    
+
+            {% else %}
+                <form class="cart add-to-cart cart-visible" productid="{{product.id}}" id="add-to-cart-{{product.id}}" style="display: inline-block" method="POST" action="{% url 'add_cart' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button id="add-to-cart-btn-{{product.id}}" class="btn btn-primary align-center">
+                    <i class="fa fa-cart-plus" aria-hidden="true"></i>
+                        To Cart</button>
+                    </form>
+                    <form class="cart remove-from-cart" id="remove-from-cart-{{product.id}}" productid="{{product.id}}" style="display: inline-block" method="POST" action="{% url 'remove_from_cart' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button id="remove-from-cart-btn-{{product.id}}" class="btn btn-warning align-center">
+                    <i class="fas fa-trash-alt"></i>
+                        From Cart</button>
+                    </form>
+            {% endif %}
+        </div>
+        
+    </div>
+    <div class="col-3">
+    <div class="divider" style="padding:.2rem;border-bottom: 2px black solid; margin: 1rem; font-weight: 500; letter-spacing:.075rem;font-size: x-large;margin-left: 0em; ">Related Products</div>
+    {% for product in relateds %}
+        <div class="related">
+            <h5><a href="{% url 'product_detail' product.slug %}">{{product.name}}</a></h5>
+            <img src="{{product.image.url}}" alt="related product" style="height:200px" >
+        </div>
+    {% endfor %}
+    </div>
+</div>
+{% endblock body %}
